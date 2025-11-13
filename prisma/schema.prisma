@@ -1,0 +1,358 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [vector]
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  emailVerified DateTime?
+  name          String?
+  password      String?
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Settings
+  settings UserSettings?
+
+  // Relations
+  accounts      Account[]
+  sessions      Session[]
+  audioSessions AudioSession[]
+  tasks         Task[]
+  queries       Query[]
+
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+model UserSettings {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Transcription settings
+  defaultLanguage String @default("en")
+
+  // Note generation settings
+  noteVerbosity String @default("normal") // concise, normal, detailed
+
+  // API keys (optional, for users who want to use their own)
+  customOpenAIKey String?
+
+  @@map("user_settings")
+}
+
+enum AudioSessionStatus {
+  QUEUED
+  TRANSCRIBING
+  STRUCTURING
+  EMBEDDING
+  READY
+  FAILED
+}
+
+model AudioSession {
+  id        String             @id @default(cuid())
+  userId    String
+  user      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+  status    AudioSessionStatus @default(QUEUED)
+
+  // Session metadata
+  title        String?
+  duration     Int?          @default(0) // in seconds
+  fileUrl      String // URL to audio file in storage
+  fileName     String
+  fileSize     Int // in bytes
+  mimeType     String
+  recordedAt   DateTime?
+  errorMessage String?
+
+  // Relations
+  transcript   Transcript?
+  chunks       Chunk[]
+  sessionNote  SessionNote?
+  tasks        Task[]
+  topics       AudioSessionTopic[]
+  embeddings   Embedding[]
+
+  @@index([userId, createdAt])
+  @@index([status])
+  @@map("audio_sessions")
+}
+
+model Transcript {
+  id             String       @id @default(cuid())
+  audioSessionId String       @unique
+  audioSession   AudioSession @relation(fields: [audioSessionId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+
+  // Transcript data
+  rawText     String  @db.Text
+  cleanedText String? @db.Text
+  language    String?
+
+  // Structured segments with timestamps
+  segments TranscriptSegment[]
+
+  @@map("transcripts")
+}
+
+model TranscriptSegment {
+  id           String     @id @default(cuid())
+  transcriptId String
+  transcript   Transcript @relation(fields: [transcriptId], references: [id], onDelete: Cascade)
+
+  startTime Float // in seconds
+  endTime   Float // in seconds
+  text      String @db.Text
+
+  @@index([transcriptId])
+  @@map("transcript_segments")
+}
+
+model Chunk {
+  id             String       @id @default(cuid())
+  audioSessionId String
+  audioSession   AudioSession @relation(fields: [audioSessionId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+
+  // Chunk metadata
+  chunkIndex Int
+  title      String
+  summary    String  @db.Text
+  content    String  @db.Text
+  startTime  Float? // in seconds
+  endTime    Float? // in seconds
+
+  // Sentiment/energy (for future)
+  sentiment String?
+  energy    String?
+
+  // Relations
+  embeddings Embedding[]
+  tasks      Task[]
+
+  @@index([audioSessionId, chunkIndex])
+  @@map("chunks")
+}
+
+model Topic {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  slug        String   @unique
+  description String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Auto-generated summary that evolves over time
+  timelineSummary String? @db.Text
+
+  // Relations
+  audioSessions AudioSessionTopic[]
+  tasks         Task[]
+
+  @@map("topics")
+}
+
+model AudioSessionTopic {
+  id             String       @id @default(cuid())
+  audioSessionId String
+  topicId        String
+  audioSession   AudioSession @relation(fields: [audioSessionId], references: [id], onDelete: Cascade)
+  topic          Topic        @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+
+  // Context about this topic in this session
+  relevance Float? @default(1.0)
+  summary   String? @db.Text
+
+  @@unique([audioSessionId, topicId])
+  @@index([topicId])
+  @@map("audio_session_topics")
+}
+
+model SessionNote {
+  id             String       @id @default(cuid())
+  audioSessionId String       @unique
+  audioSession   AudioSession @relation(fields: [audioSessionId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  // Generated markdown note
+  content String @db.Text
+
+  // User can edit the note
+  isEdited Boolean @default(false)
+
+  @@map("session_notes")
+}
+
+enum TaskStatus {
+  OPEN
+  DONE
+}
+
+model Task {
+  id             String        @id @default(cuid())
+  userId         String
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  audioSessionId String?
+  audioSession   AudioSession? @relation(fields: [audioSessionId], references: [id], onDelete: SetNull)
+  chunkId        String?
+  chunk          Chunk?        @relation(fields: [chunkId], references: [id], onDelete: SetNull)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  // Task data
+  description String  @db.Text
+  status      TaskStatus @default(OPEN)
+  dueDate     DateTime?
+  priority    String?   @default("medium") // low, medium, high
+
+  // Relations
+  topics TaskTopic[]
+
+  @@index([userId, status])
+  @@index([audioSessionId])
+  @@map("tasks")
+}
+
+model TaskTopic {
+  id        String   @id @default(cuid())
+  taskId    String
+  topicId   String
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  topic     Topic    @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([taskId, topicId])
+  @@index([topicId])
+  @@map("task_topics")
+}
+
+model Embedding {
+  id             String        @id @default(cuid())
+  audioSessionId String?
+  audioSession   AudioSession? @relation(fields: [audioSessionId], references: [id], onDelete: Cascade)
+  chunkId        String?
+  chunk          Chunk?        @relation(fields: [chunkId], references: [id], onDelete: Cascade)
+  createdAt      DateTime      @default(now())
+
+  // Embedding data
+  embeddingType String // session_note, chunk, task
+  content       String  @db.Text
+  vector        Unsupported("vector(1536)")?
+
+  @@index([audioSessionId])
+  @@index([chunkId])
+  @@map("embeddings")
+}
+
+model Query {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  // Query data
+  queryText String @db.Text
+  answer    String @db.Text
+
+  // Context used
+  sessionIds String[] // Array of session IDs referenced
+
+  @@index([userId, createdAt])
+  @@map("queries")
+}
+
+model DailySummary {
+  id        String   @id @default(cuid())
+  userId    String
+  date      DateTime @db.Date
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Summary data
+  sessionCount  Int      @default(0)
+  totalDuration Int      @default(0) // in seconds
+  topTopics     String[] // Array of topic slugs
+  taskCount     Int      @default(0)
+  summary       String?  @db.Text
+
+  @@unique([userId, date])
+  @@index([userId, date])
+  @@map("daily_summaries")
+}
+
+model WeeklySummary {
+  id        String   @id @default(cuid())
+  userId    String
+  weekStart DateTime @db.Date
+  weekEnd   DateTime @db.Date
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Summary data
+  sessionCount  Int      @default(0)
+  totalDuration Int      @default(0) // in seconds
+  topTopics     String[] // Array of topic slugs
+  taskCount     Int      @default(0)
+  summary       String?  @db.Text
+
+  @@unique([userId, weekStart])
+  @@index([userId, weekStart])
+  @@map("weekly_summaries")
+}
