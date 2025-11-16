@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Edit2, Save, X, CheckCircle } from "lucide-react";
+import { Loader2, Edit2, Save, X, CheckCircle, RotateCw, Download } from "lucide-react";
 import toast from "react-hot-toast";
 import { formatDuration } from "@/lib/utils";
 
@@ -73,6 +73,28 @@ export default function SessionDetailPage() {
       toast.error("Failed to update task");
     },
   });
+
+  const retryMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch(`/api/sessions/${sessionId}/retry`, {
+        method: "POST",
+      });
+      if (!response.ok) throw new Error("Failed to retry");
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["session", sessionId] });
+      toast.success("Session queued for retry");
+    },
+    onError: () => {
+      toast.error("Failed to retry session");
+    },
+  });
+
+  const handleExport = () => {
+    window.open(`/api/sessions/${sessionId}/export`, "_blank");
+    toast.success("Downloading session notes...");
+  };
 
   const handleSaveTitle = () => {
     if (editedTitle.trim()) {
@@ -147,17 +169,26 @@ export default function SessionDetailPage() {
             )}
           </div>
 
-          <Badge
-            variant={
-              session.status === "READY"
-                ? "default"
-                : session.status === "FAILED"
-                ? "destructive"
-                : "secondary"
-            }
-          >
-            {session.status}
-          </Badge>
+          <div className="flex items-center gap-2">
+            {session.status === "READY" && (
+              <Button variant="outline" size="sm" onClick={handleExport}>
+                <Download className="h-4 w-4 mr-2" />
+                Export
+              </Button>
+            )}
+
+            <Badge
+              variant={
+                session.status === "READY"
+                  ? "default"
+                  : session.status === "FAILED"
+                  ? "destructive"
+                  : "secondary"
+              }
+            >
+              {session.status}
+            </Badge>
+          </div>
         </div>
 
         <div className="flex items-center gap-4 text-sm text-muted-foreground">
@@ -200,10 +231,23 @@ export default function SessionDetailPage() {
       {session.status === "FAILED" && (
         <Card className="bg-red-50 border-red-200">
           <CardContent className="p-6">
-            <p className="font-medium text-red-900">Processing failed</p>
-            {session.errorMessage && (
-              <p className="text-sm text-red-700 mt-1">{session.errorMessage}</p>
-            )}
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="font-medium text-red-900">Processing failed</p>
+                {session.errorMessage && (
+                  <p className="text-sm text-red-700 mt-1">{session.errorMessage}</p>
+                )}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => retryMutation.mutate()}
+                disabled={retryMutation.isPending}
+              >
+                <RotateCw className={cn("h-4 w-4 mr-2", retryMutation.isPending && "animate-spin")} />
+                Retry
+              </Button>
+            </div>
           </CardContent>
         </Card>
       )}

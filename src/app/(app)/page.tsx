@@ -8,6 +8,7 @@ import { formatDuration } from "@/lib/utils";
 import { Mic, ListTodo, Tag, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import { UploadAudioButton } from "@/components/upload-audio-button";
+import { RecordAudioSection } from "@/components/record-audio-section";
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
@@ -116,8 +117,10 @@ export default async function DashboardPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Dashboard</h1>
-        <UploadAudioButton />
       </div>
+
+      {/* Record/Upload Section */}
+      <RecordAudioSection />
 
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

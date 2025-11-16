@@ -17,6 +17,7 @@ export function AudioPlayer({ audioUrl, onTimeUpdate }: AudioPlayerProps) {
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(1);
   const [isMuted, setIsMuted] = useState(false);
+  const [playbackRate, setPlaybackRate] = useState(1);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -91,6 +92,13 @@ export function AudioPlayer({ audioUrl, onTimeUpdate }: AudioPlayerProps) {
     }
   };
 
+  const changeSpeed = (rate: number) => {
+    if (audioRef.current) {
+      audioRef.current.playbackRate = rate;
+      setPlaybackRate(rate);
+    }
+  };
+
   const formatTime = (time: number) => {
     if (isNaN(time)) return "0:00";
     const minutes = Math.floor(time / 60);
@@ -150,6 +158,22 @@ export function AudioPlayer({ audioUrl, onTimeUpdate }: AudioPlayerProps) {
           >
             <SkipForward className="h-4 w-4" />
           </Button>
+        </div>
+
+        {/* Playback Speed */}
+        <div className="flex items-center gap-2">
+          <select
+            value={playbackRate}
+            onChange={(e) => changeSpeed(parseFloat(e.target.value))}
+            className="text-xs border rounded px-2 py-1 cursor-pointer"
+          >
+            <option value="0.5">0.5x</option>
+            <option value="0.75">0.75x</option>
+            <option value="1">1x</option>
+            <option value="1.25">1.25x</option>
+            <option value="1.5">1.5x</option>
+            <option value="2">2x</option>
+          </select>
         </div>
 
         {/* Volume Control */}

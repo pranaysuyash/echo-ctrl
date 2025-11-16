@@ -11,6 +11,7 @@ import {
   MessageSquare,
   Settings,
   LogOut,
+  TrendingUp,
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { Button } from "@/components/ui/button";
@@ -20,6 +21,7 @@ const navigation = [
   { name: "Sessions", href: "/sessions", icon: Mic },
   { name: "Tasks", href: "/tasks", icon: ListTodo },
   { name: "Topics", href: "/topics", icon: Tag },
+  { name: "Insights", href: "/insights", icon: TrendingUp },
   { name: "Ask EchoCtrl", href: "/ask", icon: MessageSquare },
   { name: "Settings", href: "/settings", icon: Settings },
 ];

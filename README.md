@@ -4,14 +4,25 @@ EchoCtrl is a voice-first personal thinking and memory system that lets you reco
 
 ## Features
 
-- 🎤 **Voice-First Capture**: Record or upload audio directly from your browser
-- 📝 **Automatic Transcription**: Powered by OpenAI Whisper
-- 🧠 **LLM-Based Structuring**: Automatically organizes thoughts into chunks, topics, and tasks
-- 🔍 **Semantic Search**: Find relevant sessions using natural language queries
-- 💬 **Conversational Query**: Ask questions about your recorded thoughts
-- 📊 **Topic Timelines**: Track how your thinking evolves over time
-- ✅ **Task Extraction**: Automatically extracts and tracks actionable items
-- 📱 **Responsive Design**: Works on desktop and mobile browsers
+### Core Capabilities
+- 🎤 **Live Audio Recording**: Record directly in browser with real-time waveform visualization
+- 📤 **Audio Upload**: Support for mp3, m4a, wav, and webm files
+- 📝 **Automatic Transcription**: Powered by OpenAI Whisper with timestamp sync
+- 🧠 **LLM-Based Structuring**: Auto-organizes into chunks, topics, and tasks
+- 🔍 **Hybrid Search**: Combined text and semantic search with pgvector
+- 💬 **Conversational AI**: Ask questions, get contextual answers with sources
+- 📊 **Topic Timelines**: Visualize how thinking evolves over time
+- ✅ **Task Management**: Extract, track, and complete actionable items
+- 📱 **Responsive Design**: Perfect on desktop, tablet, and mobile
+
+### Advanced Features
+- 🎛️ **Playback Controls**: Variable speed (0.5x - 2x), skip, volume control
+- 📥 **Export to Markdown**: Download complete session notes
+- 🔄 **Retry Failed Sessions**: One-click retry for processing failures
+- 📈 **Daily Insights**: Analytics and summaries of your thinking patterns
+- 🎯 **Interactive Transcripts**: Click timestamps to jump in audio
+- ✨ **Real-time Visualizer**: Waveform display during recording
+- 🔐 **Secure & Private**: All data scoped by user, encrypted storage
 
 ## Tech Stack
 
@@ -186,21 +197,34 @@ npm run worker
 
 Navigate to [http://localhost:3000/signup](http://localhost:3000/signup) and create an account.
 
-### 2. Upload Your First Audio Session
+### 2. Capture Your First Session
 
-1. Click the "Upload Audio" button on the dashboard
-2. Select an audio file (mp3, m4a, wav, or webm)
-3. Wait for processing (transcription → structuring → embedding)
-4. View your structured session with chunks, topics, and extracted tasks
+**Option A: Record Live**
+1. On dashboard, click "Record Audio"
+2. Allow microphone access
+3. Record your thoughts (pause/resume supported)
+4. Preview, add title, and upload
 
-### 3. Explore Features
+**Option B: Upload File**
+1. On dashboard, click "Upload File"
+2. Select audio file (mp3, m4a, wav, webm)
+3. Wait for processing
+4. View structured session
 
-- **Dashboard**: View recent sessions, open tasks, and weekly stats
-- **Sessions**: Browse all your audio sessions with filters
-- **Tasks**: Manage extracted actionable items
-- **Topics**: Explore topic timelines and evolution
-- **Ask EchoCtrl**: Query your knowledge base conversationally
-- **Settings**: Configure transcription language and note verbosity
+### 3. Explore Your Sessions
+
+- **Session Detail**: Play audio, read transcript, review chunks and tasks
+- **Interactive Transcript**: Click timestamps to jump in audio
+- **Playback Speed**: Adjust 0.5x - 2x for comfortable listening
+- **Export**: Download complete session as markdown
+- **Edit**: Rename sessions, mark tasks complete
+
+### 4. Discover Insights
+
+- **Ask EchoCtrl**: Natural language queries about your thoughts
+- **Topics**: See how thinking evolved on specific subjects
+- **Insights**: Daily analytics and usage patterns
+- **Search**: Find sessions by text or semantic meaning
 
 ## Architecture
 
